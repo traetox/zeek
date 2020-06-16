@@ -93,7 +93,7 @@ centos8_task:
     ZEEK_CI_CREATE_ARTIFACT: 1
   << : *CI_TEMPLATE
   upload_binary_artifacts:
-    path: build.tgz
+    path: ${CIRRUS_WORKING_DIR}/build.tgz
   benchmark_script: ./ci/benchmark.sh
 
 debian9_task:
