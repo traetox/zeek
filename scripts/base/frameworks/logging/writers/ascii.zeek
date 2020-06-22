@@ -92,8 +92,8 @@ export {
 # runs the writer's default postprocessor command on it.
 function default_rotation_postprocessor_func(info: Log::RotationInfo) : bool
 	{
-	# If the filename has a ".gz" extension, then keep it.
-	local gz = info$fname[-3:] == ".gz" ? ".gz" : "";
+	# If using gzip, also make sure to use the desired file extension.
+	local gz = gzip_level == 0 ? "" : cat(".", gzip_file_extension);
 	local bls = getenv("ZEEK_LOG_SUFFIX");
 
 	if ( bls == "" )
