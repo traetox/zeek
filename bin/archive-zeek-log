@@ -1,0 +1,151 @@
+#! /usr/bin/env bash
+
+if [ $# -ne 6 ]; then
+    echo "Error: incorrect number of arguments provided.
+
+ archive-zeek-log: Zeek postprocessor script to archive log files
+
+ Usage:
+
+    $ archive-zeek-log <filename> <logname> <from> <to> <terminating> <writer>
+
+      filename:    the rotated log file that we need to archive
+      logname:     base name of the log (e.g. 'conn').
+      from:        timestamp when log was created (YY-MM-DD_HH.MM.SS)
+      to:          timestamp when log was finished (YY-MM-DD_HH.MM.SS)
+      terminating: 0 during normal log rotation, or 1 if Zeek is shutting down
+      writer:      a string indicating the log writer type, such as 'ascii'
+
+ Example:
+
+    $ archive-zeek-log conn.2015-01-20-15-23-42.log conn 15-01-20_15.23.42 15-01-20_16.00.00 0 ascii" >&2
+
+    exit 1
+fi
+
+# Verify if the given timestamp is in the correct format (YY-MM-DD_HH.MM.SS).
+function check_timestamp()
+    {
+    res=$(echo $2 | sed 's/[0-9][0-9]-[0-1][0-9]-[0-3][0-9]_[0-2][0-9][.][0-5][0-9][.][0-5][0-9]/VALID/')
+
+    if [ "$res" != "VALID" ]; then
+        echo "archive-zeek-log: $1 time must be in format YY-MM-DD_HH.MM.SS: $2" >&2
+        exit 1
+    fi
+    }
+
+# Returns a path where a log file will be archived.
+#
+# make_archive_name <origname> <writer> <opened> <closed>
+#
+#    origname: original name of log file being archived (e.g. conn.log)
+#    writer:   name of the log writer type that produced the file
+#              (e.g. 'ascii', derived from 'Log::WRITER_ASCII')
+#    opened:   timestamp when the log was created
+#    closed:   timestamp when the log was finished
+#
+# Example invocation:
+#
+#    make_archive_name conn.log ascii 2015-01-20-15-48-23 2015-01-20-16-00-00
+#
+# Example output:
+#
+#    2015-01-20/conn.15:48:23-16:00:00.log
+#
+# Times are given in the form "year-month-day-hour-minute-second",
+# e.g., "2010-03-30-13-12-04"
+#
+# Note that even if the logs will be compressed, this returns filename without
+# compression extension (e.g. '.gz'), which is appended later.
+function make_archive_name()
+    {
+    ext=$(echo $1 | sed 's/^.*\.//')
+    name=$(basename $1 .$ext)
+    writer=$2
+    opened=$3
+    closed=$4
+
+    day=$(echo $opened  | awk -F - '{printf "%s-%s-%s", $1, $2, $3}')
+    from=$(echo $opened | awk -F - '{printf "%s:%s:%s", $4, $5, $6}')
+    to=$(echo $closed | awk -F - '{printf "%s:%s:%s", $4, $5, $6}')
+
+    if [ -n "$closed" ]; then
+       echo $day/$name.$from-$to.$ext
+    else
+       echo $day/$name.$from-current.$ext
+    fi
+    }
+
+# Set defaults for env. var. interface
+ZEEK_ARCHIVE_COMPRESS_CMD=${ZEEK_ARCHIVE_COMPRESS_CMD-gzip}
+ZEEK_ARCHIVE_COMPRESS_EXT=${ZEEK_ARCHIVE_COMPRESS_EXT-gz}
+
+command -v gzip >/dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    ZEEK_ARCHIVE_COMPRESS_CMD=""
+fi
+
+filename=$1
+logname=$2
+from=$3
+to=$4
+terminating=$5
+writer=$6
+
+check_timestamp start $from
+check_timestamp end $to
+
+# Convert timestamp format from YY-MM-DD_HH.MM.SS to YYYY-MM-DD-HH-MM-SS
+century=$(date +%C)
+from=$(echo $century$from | sed 's/[_.]/-/g')
+to=$(echo $century$to | sed 's/[_.]/-/g')
+
+# Extract file extension from filename
+gzipped=0
+ext=$(echo $filename | sed 's/^.*\.//')
+ext_compressed="${ZEEK_ARCHIVE_COMPRESS_EXT}"
+
+if [ "$ext" = "gz" ] || [ -n "${ZEEK_ARCHIVE_ALREADY_COMPRESSED}" ] ; then
+    # Log file is already compressed
+    gzipped=1
+    # Get extension before ".gz" (or the custom file extension from LogAscii)
+    fname=${filename%.$ext}
+    ext_compressed="$ext"
+    ext=$(echo $fname | sed 's/^.*\.//')
+fi
+
+# Compute the archived log filename
+dest=$(make_archive_name $logname.$ext $writer $from $to)
+
+# If log is compressed, then preserve the extension.
+if [ $gzipped -ne 0 ]; then
+    dest=$dest.${ext_compressed}
+fi
+
+dest_dir=$(dirname "$dest")
+mkdir -p "${dest_dir}"
+
+if [ $? -ne 0 ]; then
+    echo "archive-zeek-log: failed to create log archive directory: ${dest_dir}" >&2
+    exit 1
+fi
+
+# Record time of last rotation to potentially help a crash recovery process.
+now=$(date +%y-%m-%d_%H.%M.%S)
+echo $now > .rotated.$logname
+
+if [ -n "${ZEEK_ARCHIVE_COMPRESS_CMD}" ] && [ $gzipped -eq 0 ]; then
+    dest="$dest.${ext_compressed}"
+    nice ${ZEEK_ARCHIVE_COMPRESS_CMD} < $filename > "$dest"
+else
+    nice mv $filename "$dest"
+fi
+
+if [ $? -ne 0 ]; then
+    echo "archive-zeek-log: possibly failed to archive log file $filename to $dest" >&2
+    exit 1
+fi
+
+rm -f $filename
+echo $now > .rotated.$logname.done

@@ -70,12 +70,16 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E create_symlink
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev.sh
      "export ZEEKPATH=`${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev`\n"
      "export ZEEK_PLUGIN_PATH=\"${CMAKE_CURRENT_BINARY_DIR}/src\":${ZEEK_PLUGIN_PATH}\n"
-     "export PATH=\"${CMAKE_CURRENT_BINARY_DIR}/src\":$PATH\n")
+     "export PATH=\"${CMAKE_CURRENT_BINARY_DIR}/src\":$PATH\n"
+     "export PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/bin\":$PATH\n"
+     )
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev.csh
      "setenv ZEEKPATH `${CMAKE_CURRENT_BINARY_DIR}/zeek-path-dev`\n"
      "setenv ZEEK_PLUGIN_PATH \"${CMAKE_CURRENT_BINARY_DIR}/src\":${ZEEK_PLUGIN_PATH}\n"
-     "setenv PATH \"${CMAKE_CURRENT_BINARY_DIR}/src\":$PATH\n")
+     "setenv PATH \"${CMAKE_CURRENT_BINARY_DIR}/src\":$PATH\n"
+     "setenv PATH \"${CMAKE_CURRENT_SOURCE_DIR}/bin\":$PATH\n"
+     )
 
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" VERSION LIMIT_COUNT 1)
 execute_process(COMMAND grep "^#define  *BRO_PLUGIN_API_VERSION"
@@ -427,6 +431,7 @@ include(InstallShellScript)
 include(InstallSymlink)
 InstallShellScript("bin" "zeek-wrapper.in" "zeek-wrapper")
 InstallSymlink("${CMAKE_INSTALL_PREFIX}/bin/zeek-wrapper" "${CMAKE_INSTALL_PREFIX}/bin/bro-config")
+InstallShellScript("bin" "bin/archive-zeek-log" "archive-zeek-log")
 
 ########################################################################
 ## Recurse on sub-directories

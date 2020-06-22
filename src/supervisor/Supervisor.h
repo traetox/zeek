@@ -357,11 +357,18 @@ struct SupervisedNode {
 	bool InitCluster() const;
 
 	/**
-	 * Initialize the Supervised node.
+	 * Initialize the Supervised node.  This occurs as early as possible,
+	 * right after the process was forked.
 	 * @param options  the Zeek options to extend/modify as appropriate
 	 * for the node's configuration.
 	 */
 	void Init(zeek::Options* options) const;
+
+	/**
+	 * Initialize the Supervised node.  This occurs after Zeek scripts
+	 * were parsed.
+	 */
+	void InitPostScript() const;
 
 	/**
 	 * The node's configuration options.
