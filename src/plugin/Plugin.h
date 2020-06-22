@@ -17,9 +17,9 @@
 #define BRO_PLUGIN_BRO_VERSION BRO_VERSION_FUNCTION
 
 class ODesc;
-class Func;
 class Event;
 
+ZEEK_FORWARD_DECLARE_NAMESPACED(Func, zeek::detail);
 ZEEK_FORWARD_DECLARE_NAMESPACED(Frame, zeek::detail);
 
 namespace zeek {
@@ -239,7 +239,7 @@ public:
 	/**
 	 * Constructor with a function argument.
 	 */
-	explicit HookArgument(const Func* a)	{ type = FUNC; arg.func = a; }
+	explicit HookArgument(const zeek::detail::Func* a)	{ type = FUNC; arg.func = a; }
 
 	/**
 	 * Constructor with an integer  argument.
@@ -324,7 +324,7 @@ public:
 	 * Returns the value for a function argument. The argument's type must
 	 * match accordingly.
 	 */
-	const Func* AsFunc() const	{ assert(type == FUNC); return arg.func; }
+	const zeek::detail::Func* AsFunc() const	{ assert(type == FUNC); return arg.func; }
 
 	/**
 	 * Returns the value for an integer argument. The argument's type must
@@ -404,7 +404,7 @@ private:
 		double double_;
 		const Event* event;
 		const Connection* conn;
-		const Func* func;
+		const zeek::detail::Func* func;
 		const zeek::detail::Frame* frame;
 		int int_;
 		const Val* val;
@@ -721,10 +721,10 @@ protected:
 	 * pair with the first member set to 'false' and null result value.
 	 */
 	virtual std::pair<bool, ValPtr>
-	HookFunctionCall(const Func* func, zeek::detail::Frame* parent, zeek::Args* args);
+	HookFunctionCall(const zeek::detail::Func* func, zeek::detail::Frame* parent, zeek::Args* args);
 
 	[[deprecated("Remove in v4.1.  Use HookFunctionCall()")]]
-	virtual std::pair<bool, Val*> HookCallFunction(const Func* func, zeek::detail::Frame *parent, val_list* args);
+	virtual std::pair<bool, Val*> HookCallFunction(const zeek::detail::Func* func, zeek::detail::Frame *parent, val_list* args);
 
 	/**
 	 * Hook into raising events. Whenever the script interpreter is about
