@@ -26,6 +26,10 @@
 #include <cassert>
 #include "util.h"
 
+enum class [[deprecated("Remove in v4.1. Use zeek::ListOrder instead.")]] ListOrder : int { ORDERED, UNORDERED };
+
+namespace zeek {
+
 enum class ListOrder : int { ORDERED, UNORDERED };
 
 template<typename T, ListOrder Order = ListOrder::ORDERED>
@@ -331,7 +335,18 @@ template<typename T, ListOrder Order = ListOrder::ORDERED>
 using PList = List<T*, Order>;
 
 // Popular type of list: list of strings.
-typedef PList<char> name_list;
+using name_list = PList<char>;
+
+} // namespace zeek
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+template<typename T, ListOrder Order = ListOrder::ORDERED> using List [[deprecated("Remove in v4.1. Use zeek::List instead.")]] =
+	zeek::List<T, static_cast<zeek::ListOrder>(Order)>;
+template<typename T, ListOrder Order = ListOrder::ORDERED> using PList [[deprecated("Remove in v4.1. Use zeek::PList instead.")]] =
+	zeek::PList<T, static_cast<zeek::ListOrder>(Order)>;
+using name_list [[deprecated("Remove in v4.1. use zeek::name_list instead.")]] = zeek::name_list;
+#pragma GCC diagnostic pop
 
 // Macro to visit each list element in turn.
 #define loop_over_list(list, iterator)  \
