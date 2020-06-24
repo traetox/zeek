@@ -106,7 +106,12 @@ function default_rotation_postprocessor_func(info: Log::RotationInfo) : bool
 	local dst = fmt("%s.%s%s", info$path,
 			strftime(Log::default_rotation_date_format, info$open), ext);
 
-	system(fmt("/bin/mv %s %s", info$fname, dst));
+	if ( ! rename(info$fname, dst) )
+		{
+		# Returning false would cause the writer to shutdown completely and
+		# rename() already reported an error, so just accept the situation.
+		return T;
+		}
 
 	# Run default postprocessor.
 	return Log::run_rotation_postprocessor_cmd(info, dst);
