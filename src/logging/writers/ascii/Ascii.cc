@@ -6,13 +6,13 @@
 #include <vector>
 #include <memory>
 #include <optional>
-#include <filesystem>
 
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "Func.h"
 #include "supervisor/Supervisor.h"
@@ -699,37 +699,37 @@ static std::vector<LeftoverLog> find_leftover_logs()
 	std::vector<std::string> stale_shadow_files;
 	auto prefix_len = strlen(shadow_file_prefix);
 
-	for ( const auto& p : std::filesystem::directory_iterator(".") )
+	auto d = opendir(".");
+	struct dirent* dp;
+
+	while ( (dp = readdir(d)) )
 		{
-		auto f = p.path().string();
-		// Skip "./"
-		f = f.substr(2);
+		if ( strncmp(dp->d_name, shadow_file_prefix, prefix_len) != 0 )
+			continue;
 
-		if ( f.rfind(shadow_file_prefix, 0) == 0 )
+		std::string log_name = dp->d_name + prefix_len;
+
+		if ( is_file(log_name) )
 			{
-			auto log_name = f.data() + prefix_len;
-
-			if ( is_file(log_name) )
+			if ( auto ll = parse_shadow_log(log_name) )
 				{
-				if ( auto ll = parse_shadow_log(log_name) )
-					{
-					if ( ll->error.empty() )
-						rval.emplace_back(std::move(*ll));
-					else
-						reporter->Error("failed to process leftover log '%s': %s",
-						                log_name, ll->error.data());
-					}
+				if ( ll->error.empty() )
+					rval.emplace_back(std::move(*ll));
+				else
+					reporter->Error("failed to process leftover log '%s': %s",
+					                log_name.data(), ll->error.data());
 				}
-			else
-				// There was a log here.  It's gone now.
-				stale_shadow_files.emplace_back(std::move(f));
 			}
+		else
+			// There was a log here.  It's gone now.
+			stale_shadow_files.emplace_back(dp->d_name);
 		}
 
 	for ( const auto& f : stale_shadow_files )
 		if ( unlink(f.data()) != 0 )
 			reporter->Error("cannot unlink %s: %s", f.data(), strerror(errno));
 
+	closedir(d);
 	return rval;
 	}
 
