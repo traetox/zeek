@@ -138,10 +138,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Record time of last rotation to potentially help a crash recovery process.
-now=$(date +%y-%m-%d_%H.%M.%S)
-echo $now > .rotated.$logname
-
 if [ -n "${ZEEK_ARCHIVE_COMPRESS_CMD}" ] && [ $gzipped -eq 0 ]; then
     dest="$dest.${ext_compressed}"
     nice ${ZEEK_ARCHIVE_COMPRESS_CMD} < $filename > "$dest"
@@ -155,4 +151,7 @@ if [ $? -ne 0 ]; then
 fi
 
 rm -f $filename
-echo $now > .rotated.$logname.done
+
+if [ -n "${ZEEK_ARCHIVE_TEST}" ]; then
+    touch .rotated.$logname.done
+fi

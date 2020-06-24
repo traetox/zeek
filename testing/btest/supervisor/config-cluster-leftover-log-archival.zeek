@@ -2,18 +2,18 @@
 # @TEST-PORT: LOGGER_PORT
 
 # Test default leftover log rotation/archival behavior
-# @TEST-EXEC: btest-bg-run zeek zeek -j -b %INPUT
-# @TEST-EXEC: btest-bg-wait 30
-# @TEST-EXEC: $SCRIPTS/wait-for-file zeek/logger-1/.rotated.test.done 10 || (btest-bg-wait -k 1 && false)
+# @TEST-EXEC: ZEEK_ARCHIVE_TEST=1 btest-bg-run zeek zeek -j -b %INPUT
+# @TEST-EXEC: btest-bg-wait 45
+# @TEST-EXEC: $SCRIPTS/wait-for-file zeek/logger-1/.rotated.test.done 15 || (btest-bg-wait -k 1 && false)
 
 # @TEST-EXEC: gunzip -c zeek/logger-1/*/test*.log.gz > test.default.log
 # @TEST-EXEC: btest-diff test.default.log
 # @TEST-EXEC: rm -rf ./zeek
 
 # Test leftover log rotation/archival behavior with custom postprocessor func
-# @TEST-EXEC: btest-bg-run zeek zeek -j -b %INPUT use_custom_postproc=T
-# @TEST-EXEC: btest-bg-wait 30
-# @TEST-EXEC: $SCRIPTS/wait-for-file zeek/logger-1/.rotated.test.done 10 || (btest-bg-wait -k 1 && false)
+# @TEST-EXEC: ZEEK_ARCHIVE_TEST=1 btest-bg-run zeek zeek -j -b %INPUT use_custom_postproc=T
+# @TEST-EXEC: btest-bg-wait 45
+# @TEST-EXEC: $SCRIPTS/wait-for-file zeek/logger-1/.rotated.test.done 15 || (btest-bg-wait -k 1 && false)
 
 # @TEST-EXEC: gunzip -c zeek/logger-1/*/test*.log.gz > test.postproc.log
 # @TEST-EXEC: btest-diff test.postproc.log
