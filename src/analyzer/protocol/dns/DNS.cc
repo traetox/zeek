@@ -196,8 +196,8 @@ bool DNS_Interpreter::ParseQuestion(DNS_MsgInfo* msg,
 
 	if ( dns_event && ! msg->skip_event )
 		{
-		BroString* question_name =
-			new BroString(name, name_end - name, true);
+		zeek::BroString* question_name =
+			new zeek::BroString(name, name_end - name, true);
 		SendReplyOrRejectEvent(msg, dns_event, data, len, question_name);
 		}
 	else
@@ -231,7 +231,7 @@ bool DNS_Interpreter::ParseAnswer(DNS_MsgInfo* msg,
 	// Note that the exact meaning of some of these fields will be
 	// re-interpreted by other, more adventurous RR types.
 
-	msg->query_name = zeek::make_intrusive<zeek::StringVal>(new BroString(name, name_end - name, true));
+	msg->query_name = zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(name, name_end - name, true));
 	msg->atype = RR_Type(ExtractShort(data, len));
 	msg->aclass = ExtractShort(data, len);
 	msg->ttl = ExtractLong(data, len);
@@ -554,7 +554,7 @@ bool DNS_Interpreter::ParseRR_Name(DNS_MsgInfo* msg,
 			analyzer->ConnVal(),
 			msg->BuildHdrVal(),
 			msg->BuildAnswerVal(),
-			zeek::make_intrusive<zeek::StringVal>(new BroString(name, name_end - name, true))
+			zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(name, name_end - name, true))
 		);
 
 	return true;
@@ -596,8 +596,8 @@ bool DNS_Interpreter::ParseRR_SOA(DNS_MsgInfo* msg,
 		{
 		static auto dns_soa = zeek::id::find_type<zeek::RecordType>("dns_soa");
 		auto r = zeek::make_intrusive<zeek::RecordVal>(dns_soa);
-		r->Assign(0, zeek::make_intrusive<zeek::StringVal>(new BroString(mname, mname_end - mname, true)));
-		r->Assign(1, zeek::make_intrusive<zeek::StringVal>(new BroString(rname, rname_end - rname, true)));
+		r->Assign(0, zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(mname, mname_end - mname, true)));
+		r->Assign(1, zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(rname, rname_end - rname, true)));
 		r->Assign(2, val_mgr->Count(serial));
 		r->Assign(3, zeek::make_intrusive<zeek::IntervalVal>(double(refresh), Seconds));
 		r->Assign(4, zeek::make_intrusive<zeek::IntervalVal>(double(retry), Seconds));
@@ -638,7 +638,7 @@ bool DNS_Interpreter::ParseRR_MX(DNS_MsgInfo* msg,
 			analyzer->ConnVal(),
 			msg->BuildHdrVal(),
 			msg->BuildAnswerVal(),
-			zeek::make_intrusive<zeek::StringVal>(new BroString(name, name_end - name, true)),
+			zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(name, name_end - name, true)),
 			val_mgr->Count(preference)
 		);
 
@@ -679,7 +679,7 @@ bool DNS_Interpreter::ParseRR_SRV(DNS_MsgInfo* msg,
 			analyzer->ConnVal(),
 			msg->BuildHdrVal(),
 			msg->BuildAnswerVal(),
-			zeek::make_intrusive<zeek::StringVal>(new BroString(name, name_end - name, true)),
+			zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(name, name_end - name, true)),
 			val_mgr->Count(priority),
 			val_mgr->Count(weight),
 			val_mgr->Count(port)
@@ -715,23 +715,23 @@ bool DNS_Interpreter::ParseRR_EDNS(DNS_MsgInfo* msg,
 	}
 
 void DNS_Interpreter::ExtractOctets(const u_char*& data, int& len,
-                                    BroString** p)
+                                    zeek::BroString** p)
 	{
 	uint16_t dlen = ExtractShort(data, len);
 	dlen = min(len, static_cast<int>(dlen));
 
 	if ( p )
-		*p = new BroString(data, dlen, false);
+		*p = new zeek::BroString(data, dlen, false);
 
 	data += dlen;
 	len -= dlen;
 	}
 
-BroString* DNS_Interpreter::ExtractStream(const u_char*& data, int& len, int l)
+zeek::BroString* DNS_Interpreter::ExtractStream(const u_char*& data, int& len, int l)
 	{
 	l = max(l, 0);
 	int dlen = min(len, l); // Len in bytes of the algorithm use
-	auto rval = new BroString(data, dlen, false);
+	auto rval = new zeek::BroString(data, dlen, false);
 
 	data += dlen;
 	len -= dlen;
@@ -755,7 +755,7 @@ bool DNS_Interpreter::ParseRR_TSIG(DNS_MsgInfo* msg,
 	uint32_t sign_time_sec = ExtractLong(data, len);
 	unsigned int sign_time_msec = ExtractShort(data, len);
 	unsigned int fudge = ExtractShort(data, len);
-	BroString* request_MAC;
+	zeek::BroString* request_MAC;
 	ExtractOctets(data, len, dns_TSIG_addl ? &request_MAC : nullptr);
 	unsigned int orig_id = ExtractShort(data, len);
 	unsigned int rr_error = ExtractShort(data, len);
@@ -765,7 +765,7 @@ bool DNS_Interpreter::ParseRR_TSIG(DNS_MsgInfo* msg,
 		{
 		TSIG_DATA tsig;
 		tsig.alg_name =
-			new BroString(alg_name, alg_name_end - alg_name, true);
+			new zeek::BroString(alg_name, alg_name_end - alg_name, true);
 		tsig.sig = request_MAC;
 		tsig.time_s = sign_time_sec;
 		tsig.time_ms = sign_time_msec;
@@ -819,7 +819,7 @@ bool DNS_Interpreter::ParseRR_RRSIG(DNS_MsgInfo* msg,
 
 	int sig_len = rdlength - ((data - data_start) + 18);
 	DNSSEC_Algo dsa = DNSSEC_Algo(algo);
-	BroString* sign = ExtractStream(data, len, sig_len);
+	zeek::BroString* sign = ExtractStream(data, len, sig_len);
 
 	switch ( dsa ) {
 		case RSA_MD5:
@@ -871,7 +871,7 @@ bool DNS_Interpreter::ParseRR_RRSIG(DNS_MsgInfo* msg,
 		rrsig.sig_exp = sign_exp;
 		rrsig.sig_incep = sign_incp;
 		rrsig.key_tag = key_tag;
-		rrsig.signer_name = new BroString(name, name_end - name, true);
+		rrsig.signer_name = new zeek::BroString(name, name_end - name, true);
 		rrsig.signature = sign;
 
 		analyzer->EnqueueConnEvent(dns_RRSIG,
@@ -906,7 +906,7 @@ bool DNS_Interpreter::ParseRR_DNSKEY(DNS_MsgInfo* msg,
 	unsigned int dalgorithm = proto_algo & 0xff;
 	DNSSEC_Algo dsa = DNSSEC_Algo(dalgorithm);
 	//Evaluating the size of remaining bytes for Public Key
-	BroString* key = ExtractStream(data, len, rdlength - 4);
+	zeek::BroString* key = ExtractStream(data, len, rdlength - 4);
 
 	// flags bit  7: zone key
 	// flags bit  8: revoked
@@ -1015,7 +1015,7 @@ bool DNS_Interpreter::ParseRR_NSEC(DNS_MsgInfo* msg,
 			break;
 			}
 
-		BroString* bitmap = ExtractStream(data, len, bmlen);
+		zeek::BroString* bitmap = ExtractStream(data, len, bmlen);
 		char_strings->Assign(char_strings->Size(), zeek::make_intrusive<zeek::StringVal>(bitmap));
 		typebitmaps_len = typebitmaps_len - (2 + bmlen);
 		}
@@ -1025,7 +1025,7 @@ bool DNS_Interpreter::ParseRR_NSEC(DNS_MsgInfo* msg,
 			analyzer->ConnVal(),
 			msg->BuildHdrVal(),
 			msg->BuildAnswerVal(),
-			zeek::make_intrusive<zeek::StringVal>(new BroString(name, name_end - name, true)),
+			zeek::make_intrusive<zeek::StringVal>(new zeek::BroString(name, name_end - name, true)),
 			std::move(char_strings)
 		);
 
@@ -1090,7 +1090,7 @@ bool DNS_Interpreter::ParseRR_NSEC3(DNS_MsgInfo* msg,
 			break;
 			}
 
-		BroString* bitmap = ExtractStream(data, len, bmlen);
+		zeek::BroString* bitmap = ExtractStream(data, len, bmlen);
 		char_strings->Assign(char_strings->Size(), zeek::make_intrusive<zeek::StringVal>(bitmap));
 		typebitmaps_len = typebitmaps_len - (2 + bmlen);
 		}
@@ -1138,7 +1138,7 @@ bool DNS_Interpreter::ParseRR_DS(DNS_MsgInfo* msg,
 	unsigned int ds_algo = (ds_algo_dtype >> 8) & 0xff;
 	unsigned int ds_dtype = ds_algo_dtype & 0xff;
 	DNSSEC_Digest ds_digest_type = DNSSEC_Digest(ds_dtype);
-	BroString* ds_digest = ExtractStream(data, len, rdlength - 4);
+	zeek::BroString* ds_digest = ExtractStream(data, len, rdlength - 4);
 
 	switch ( ds_digest_type ) {
 		case SHA1:
@@ -1356,11 +1356,11 @@ bool DNS_Interpreter::ParseRR_CAA(DNS_MsgInfo* msg,
 		analyzer->Weird("DNS_CAA_char_str_past_rdlen");
 		return false;
 		}
-	BroString* tag = new BroString(data, tagLen, true);
+	zeek::BroString* tag = new zeek::BroString(data, tagLen, true);
 	len -= tagLen;
 	data += tagLen;
 	rdlength -= tagLen;
-	BroString* value = new BroString(data, rdlength, false);
+	zeek::BroString* value = new zeek::BroString(data, rdlength, false);
 
 	len -= value->Len();
 	data += value->Len();
@@ -1388,7 +1388,7 @@ bool DNS_Interpreter::ParseRR_CAA(DNS_MsgInfo* msg,
 void DNS_Interpreter::SendReplyOrRejectEvent(DNS_MsgInfo* msg,
 						EventHandlerPtr event,
 						const u_char*& data, int& len,
-						BroString* question_name)
+						zeek::BroString* question_name)
 	{
 	RR_Type qtype = RR_Type(ExtractShort(data, len));
 	int qclass = ExtractShort(data, len);
