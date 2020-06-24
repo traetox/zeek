@@ -92,16 +92,19 @@ export {
 # runs the writer's default postprocessor command on it.
 function default_rotation_postprocessor_func(info: Log::RotationInfo) : bool
 	{
-	# If using gzip, also make sure to use the desired file extension.
-	local gz = gzip_level == 0 ? "" : cat(".", gzip_file_extension);
-	local bls = getenv("ZEEK_LOG_SUFFIX");
-
-	if ( bls == "" )
-		bls = "log";
+	# Original time format the logging manager requested.
+	local orig_time = strftime("%y-%m-%d_%H.%M.%S", info$open);
+	# Original rotation path the logging manager requested.
+	local orig_path = fmt("%s-%s", info$path, orig_time);
+	# The per-filter configuration of gzip extension makes it hard to
+	# recover the file extension any other way than trying to reproduce
+	# the original path requested by the logging manager and backing it out
+	# to figure out what the ASCII writer added to it as an extension.
+	local ext = info$fname[|orig_path|:];
 
 	# Move file to name including both opening and closing time.
-	local dst = fmt("%s.%s.%s%s", info$path,
-			strftime(Log::default_rotation_date_format, info$open), bls, gz);
+	local dst = fmt("%s.%s%s", info$path,
+			strftime(Log::default_rotation_date_format, info$open), ext);
 
 	system(fmt("/bin/mv %s %s", info$fname, dst));
 
