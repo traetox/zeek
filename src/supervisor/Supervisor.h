@@ -365,12 +365,6 @@ struct SupervisedNode {
 	void Init(zeek::Options* options) const;
 
 	/**
-	 * Initialize the Supervised node.  This occurs after Zeek scripts
-	 * were parsed.
-	 */
-	void InitPostScript() const;
-
-	/**
 	 * The node's configuration options.
 	 */
 	Supervisor::NodeConfig config;

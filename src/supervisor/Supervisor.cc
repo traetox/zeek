@@ -1515,17 +1515,6 @@ void SupervisedNode::Init(zeek::Options* options) const
 		options->scripts_to_load.emplace_back(s);
 	}
 
-void SupervisedNode::InitPostScript() const
-	{
-	// Inform `archive-zeek-log` whether logs are already compressed.
-	const auto& gzlevel = zeek::id::find("LogAscii::gzip_level");
-
-	if ( gzlevel && gzlevel->GetVal()->AsCount() > 0 &&
-	     setenv("ZEEK_ARCHIVE_ALREADY_COMPRESSED", "1", true) == -1 )
-		fprintf(stderr, "failed to set ZEEK_ARCHIVE_ALREADY_COMPRESSED: %s\n",
-		        strerror(errno));
-	}
-
 IntrusivePtr<RecordVal> Supervisor::Status(std::string_view node_name)
 	{
 	auto rval = make_intrusive<RecordVal>(zeek::BifType::Record::Supervisor::Status);

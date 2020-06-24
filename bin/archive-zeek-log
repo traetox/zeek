@@ -105,8 +105,15 @@ to=$(echo $century$to | sed 's/[_.]/-/g')
 gzipped=0
 ext=$(echo $filename | sed 's/^.*\.//')
 ext_compressed="${ZEEK_ARCHIVE_COMPRESS_EXT}"
+already_compressed=""
 
-if [ "$ext" = "gz" ] || [ -n "${ZEEK_ARCHIVE_ALREADY_COMPRESSED}" ] ; then
+# Look for gzip magic number
+if [ "$(LANG=C awk '{ print substr($0,1,1) == "\x1f" }' $filename)" == "1" ] &&
+   [ "$(LANG=C awk '{ print substr($0,2,1) == "\x8b" }' $filename)" == "1" ]; then
+    already_compressed="1"
+fi
+
+if [ "$ext" = "gz" ] || [ -n "${already_compressed}" ] ; then
     # Log file is already compressed
     gzipped=1
     # Get extension before ".gz" (or the custom file extension from LogAscii)

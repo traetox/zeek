@@ -651,9 +651,6 @@ zeek::detail::SetupResult zeek::detail::setup(int argc, char** argv,
 	if ( zeek::supervisor_mgr )
 		zeek::supervisor_mgr->InitPostScript();
 
-	if ( zeek::Supervisor::ThisNode() )
-		zeek::Supervisor::ThisNode()->InitPostScript();
-
 	if ( options.print_plugins )
 		{
 		bool success = show_plugins(options.print_plugins);
